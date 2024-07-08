@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper
+	namespace="com.epay.ewallet.store.daesang.mapperOne.IUser">
+
+	<resultMap type="com.epay.ewallet.store.daesang.model.User" id="User">
+		<result property="id" column="ID" />
+		<result property="phoneNumber" column="PHONE" />
+		<result property="name" column="NAME" />
+		<result property="email" column="EMAIL" />
+		<result property="status" column="STATUS" />
+		<result property="personalId" column="PERSONAL_ID" />
+		<result property="personalIdType" column="PERSONAL_ID_TYPE" />
+		<result property="lang" column="LANG" />
+		<result property="password" column="PASSWORD" />
+		<result property="companyId" column="COMPANY_ID" />
+		<result property="empVerifyStatus" column="EMP_VERIFY_STATUS" />
+	</resultMap>
+
+	<select id="getUserByPhoneNumber" parameterType="String"
+		resultMap="User">
+		SELECT *
+		FROM TBL_USERS
+		WHERE PHONE = #{phone}
+	</select>
+
+	<select id="getUserById" parameterType="long" resultMap="User">
+		SELECT *
+		FROM TBL_USERS
+		WHERE ID = #{id}
+	</select>
+	
+	<select id="getUserFullNameByPhone" resultType="Map">
+		SELECT
+			FULL_NAME 
+		FROM
+			TBL_COMPANY_USER 
+		WHERE
+			PHONE_NUMBER = #{phone}
+			OR REGISTER_PHONE = #{phone}
+	</select>
+	
+</mapper>

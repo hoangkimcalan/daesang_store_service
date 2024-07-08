@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.epay.ewallet.store.daesang.mapperOne.IDucVietCart">
+	
+	<resultMap type="com.epay.ewallet.store.daesang.model.DucVietCart" id="DucVietCart">
+		<result property="id" column="ID"/>
+		<result property="userId" column="USER_ID"/>
+		<result property="productId" column="PRODUCT_ID"/>
+		<result property="quantity" column="QUANTITY"/>
+		<result property="status" column="STATUS"/>
+		<result property="createdAt" column="CREATED_AT"/>
+		<result property="updatedAt" column="UPDATED_AT"/>
+	</resultMap>
+	
+	<select id="getCartProductByID" resultMap="DucVietCart" parameterType="String">
+		SELECT * FROM TBL_DUCVIET_CART WHERE ID = #{cartProductId}
+	</select>
+	
+	<select id="countTotalProductInUserCart" resultType="int">
+		SELECT COUNT(*) FROM TBL_DUCVIET_CART WHERE USER_ID = #{userId}
+	</select>
+	
+	<insert id="addNewProductToCart" parameterType="com.epay.ewallet.store.daesang.model.DucVietCart">
+		INSERT 
+		INTO TBL_DUCVIET_CART ( ID, USER_ID, PRODUCT_ID, QUANTITY, CREATED_AT, UPDATED_AT )
+		VALUES ( #{cartProduct.id}, #{cartProduct.userId}, #{cartProduct.productId}, #{cartProduct.quantity}, SYSDATE, SYSDATE )
+	</insert>
+	
+	<update id="changeQuantity" parameterType="com.epay.ewallet.store.daesang.model.DucVietCart">
+		UPDATE
+			TBL_DUCVIET_CART
+		SET
+			QUANTITY = #{cartProduct.quantity},
+			UPDATED_AT = SYSDATE
+		WHERE ID = #{cartProduct.id}
+	</update>
+	
+	<select id="getUserCartDetail" resultType="Map">
+		SELECT CART.*
+		FROM (
+			SELECT RS.*, ROWNUM AS RN FROM (
+				SELECT
+					dc.PRODUCT_ID,
+					sp.NAME,
+					sp.DISCOUNT_PRICE,
+					sp.PRICE,
+					sp.STATUS,
+					dc.QUANTITY,
+					spi.IMAGE,
+					dc.CREATED_AT
+				FROM TBL_DUCVIET_CART dc
+				INNER JOIN TBL_STORE_PRODUCT sp
+					ON dc.PRODUCT_ID = sp.PRODUCT_CODE
+				INNER JOIN TBL_STORE_PRODUCT_IMG spi
+					ON spi.PRODUCT_ID = sp.ID AND spi.PRIORITY = 1
+				WHERE dc.USER_ID = #{userId}
+				ORDER BY dc.UPDATED_AT DESC
+			) RS WHERE ROWNUM <![CDATA[ <= ]]> #{end}
+		) CART WHERE RN <![CDATA[ > ]]> #{start}
+	</select>
+	
+	<delete id="removeProductFromCart" parameterType="String">
+		DELETE TBL_DUCVIET_CART WHERE ID = #{id}
+	</delete>
+	
+	<delete id="removeProductsFromCart">
+		DELETE TBL_DUCVIET_CART WHERE ID IN 
+		<foreach item="code" collection="listCartProductId" separator="," open="(" close=")">
+		        #{code}
+		</foreach>
+	</delete>
+	
+	<select id="sumCartProductAmount" resultType="Map">
+		SELECT
+			SUM((dc.QUANTITY * sp.PRICE)) AS TOTAL_ORIGINAL_PRICE,
+			SUM((dc.QUANTITY * sp.DISCOUNT_PRICE)) AS TOTAL_DISCOUNT_PRICE
+		FROM TBL_DUCVIET_CART dc
+		INNER JOIN TBL_STORE_PRODUCT sp
+			ON dc.PRODUCT_ID = sp.PRODUCT_CODE
+		WHERE dc.USER_ID = #{userId}
+		<if test="listProductCode != null">
+			AND dc.PRODUCT_ID IN
+			<foreach item="code" collection="listProductCode" separator="," open="(" close=")">
+		        #{code}
+		    </foreach>
+		</if>
+	</select>
+	
+	<select id="loadListCartProductCheckout" resultType="Map">
+		SELECT
+			sp.PRODUCT_CODE,
+			sp.NAME,
+			sp.STATUS,
+			dc.ID AS CP_ID,
+			dc.QUANTITY,
+			sp.DISCOUNT_PRICE,
+			sp.WEIGHT,
+			sot.BUY_ON_DAY_OF_WEEK,
+			sot.PRODUCT_CLASS,
+			sot.STATUS AS SOT_STATUS
+		FROM TBL_DUCVIET_CART dc
+		INNER JOIN TBL_STORE_PRODUCT sp
+			ON dc.PRODUCT_ID = sp.PRODUCT_CODE
+		INNER JOIN TBL_STORE_ORDER_THRESHOLD sot
+			ON sp.ID = sot.PRODUCT_ID
+		WHERE dc.USER_ID = #{userId}
+			AND dc.PRODUCT_ID IN
+			<foreach item="code" collection="listProductCode" separator="," open="(" close=")">
+		        #{code}
+		    </foreach>
+	</select>
+	
+	<select id="loadListCartProductCheckoutSuccess" resultType="Map">
+		SELECT
+			sp.PRODUCT_CODE,
+			sp.NAME AS PRODUCT_NAME,
+			dc.QUANTITY,
+			sp.DISCOUNT_PRICE,
+			sp.PRICE,
+			spi.IMAGE
+		FROM TBL_DUCVIET_CART dc
+		INNER JOIN TBL_STORE_PRODUCT sp
+			ON dc.PRODUCT_ID = sp.PRODUCT_CODE
+		INNER JOIN TBL_STORE_PRODUCT_IMG spi
+			ON dc.PRODUCT_ID = spi.PRODUCT_CODE and spi.PRIORITY = 1
+		WHERE dc.USER_ID = #{userId}
+			AND sp.STATUS = 1
+			AND dc.PRODUCT_ID IN
+			<foreach item="code" collection="listProductCode" separator="," open="(" close=")">
+		        #{code}
+		    </foreach>
+	</select>
+	
+	<select id="countTotalCartItemByUserId" resultType="Map">
+		SELECT COUNT(*) "total_cart_item" FROM TBL_DUCVIET_CART WHERE USER_ID = #{userId}
+	</select>
+	
+</mapper>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.epay.ewallet.store.daesang.mapperOne.IStoreProduct">
+
+    <resultMap id="storeProduct" type="com.epay.ewallet.store.daesang.model.StoreProduct">
+        <result property="id" column="ID"/>
+        <result property="storeId" column="STORE_ID"/>
+        <result property="categoryId" column="CATEGORY_ID"/>
+        <result property="name" column="NAME"/>
+        <result property="price" column="PRICE"/>
+        <result property="weight" column="WEIGHT"/>
+        <result property="productInfo" column="PRODUCT_INFO"/>
+        <result property="status" column="STATUS"/>
+        <result property="brand" column="BRAND"/>
+        <result property="discountPrice" column="DISCOUNT_PRICE"/>
+        <result property="discountPercent" column="DISCOUNT_PERCENT"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+    </resultMap>
+
+    <select id="getProductAndThreshold" resultType="Map">
+        SELECT 
+			sp.ID AS PRODUCT_ID,
+			sp.STORE_ID,
+			sp.NAME AS PRODUCT_NAME,
+			sp.PRICE,
+			sp.WEIGHT,
+			sp.STATUS AS PRODUCT_STATUS,
+			sp.DISCOUNT_PRICE,
+			sp.PRODUCT_CODE,
+			sot.BUY_ON_DAY_OF_WEEK,
+			sot.BUY_ON_DAY_OF_MONTH,
+			sot.MAX_WEIGHT_PER_MONTH,
+			sot.PRODUCT_CLASS,
+			sot.STATUS AS SOT_STATUS,
+			spi.IMAGE
+		FROM TBL_STORE_PRODUCT sp
+		LEFT JOIN TBL_STORE_ORDER_THRESHOLD sot
+			ON sp.STORE_ID = sot.STORE_ID AND sp.ID = sot.PRODUCT_ID
+		LEFT JOIN TBL_STORE_PRODUCT_IMG spi
+			ON sp.ID = spi.PRODUCT_ID
+		WHERE sp.STORE_ID = #{storeId}
+			AND sp.ID = #{productId}
+			AND spi.PRIORITY = 1
+    </select>
+    
+    <select id="getProductAndThresholdByProductCode" resultType="Map">
+        SELECT 
+			sp.ID AS PRODUCT_ID,
+			sp.STORE_ID,
+			sp.NAME AS PRODUCT_NAME,
+			sp.PRICE,
+			sp.WEIGHT,
+			sp.STATUS AS PRODUCT_STATUS,
+			sp.DISCOUNT_PRICE,
+			sp.PRODUCT_CODE,
+			sot.BUY_ON_DAY_OF_WEEK,
+			sot.BUY_ON_DAY_OF_MONTH,
+			sot.MAX_WEIGHT_PER_MONTH,
+			sot.PRODUCT_CLASS,
+			sot.STATUS AS SOT_STATUS,
+			spi.IMAGE
+		FROM TBL_STORE_PRODUCT sp
+		LEFT JOIN TBL_STORE_ORDER_THRESHOLD sot
+			ON sp.STORE_ID = sot.STORE_ID AND sp.ID = sot.PRODUCT_ID
+		LEFT JOIN TBL_STORE_PRODUCT_IMG spi
+			ON sp.ID = spi.PRODUCT_ID
+		WHERE sp.STORE_ID = #{storeId}
+			AND sp.PRODUCT_CODE = #{productCode}
+			AND spi.PRIORITY = 1
+    </select>
+	
+	<resultMap id="Product" type="com.epay.ewallet.store.daesang.model.Product">
+        <result property="id" column="ID"/>
+        <result property="image" column="IMAGE"/>
+        <result property="name" column="NAME"/>
+        <result property="originPrice" column="PRICE"/>
+        <result property="discountPrice" column="DISCOUNT_PRICE"/>
+        <result property="discountPercent" column="DISCOUNT_PERCENT"/>
+    </resultMap>
+
+    <select id="getAllActiveProductsInPage" resultMap="Product">
+        SELECT * FROM
+            (SELECT a.*, ROWNUM rnum
+            FROM
+                (SELECT p.ID AS ID, pi.IMAGE AS IMAGE, p.NAME AS NAME, p.PRICE AS PRICE, p.DISCOUNT_PRICE AS DISCOUNT_PRICE, p.DISCOUNT_PERCENT AS DISCOUNT_PERCENT
+                FROM TBL_STORE_PRODUCT p
+                LEFT JOIN TBL_STORE_PRODUCT_IMG pi ON p.ID = pi.PRODUCT_ID AND pi.PRIORITY = 1
+                WHERE p.STORE_ID = #{storeId} AND p.STATUS = 1
+                ORDER BY p.CREATED_AT DESC) a
+            WHERE ROWNUM &lt; #{end})
+        WHERE rnum &gt; #{start}
+    </select>
+
+    <select id="getAllActiveProductsByNameInPage" resultMap="Product">
+        SELECT * FROM
+            (SELECT a.*, ROWNUM rnum
+             FROM
+                 (SELECT p.ID AS ID, pi.IMAGE AS IMAGE, p.NAME AS NAME, p.PRICE AS PRICE, p.DISCOUNT_PRICE AS DISCOUNT_PRICE, p.DISCOUNT_PERCENT AS DISCOUNT_PERCENT
+                  FROM TBL_STORE_PRODUCT p
+                  LEFT JOIN TBL_STORE_PRODUCT_IMG pi ON p.ID = pi.PRODUCT_ID AND pi.PRIORITY = 1
+                  WHERE p.STORE_ID = #{storeId} AND p.STATUS = 1 AND FN_CONVERT_TO_VN_UPPERCASE(p.NAME) LIKE '%' || #{productName} || '%'
+                  ORDER BY p.CREATED_AT DESC) a
+             WHERE ROWNUM &lt; #{end})
+        WHERE rnum &gt; #{start}
+    </select>
+    
+    <resultMap id="ProductDetail" type="com.epay.ewallet.store.daesang.model.ProductDetail">
+        <result property="id" column="ID"/>
+        <result property="storeId" column="STORE_ID"/>
+        <result property="status" column="STATUS"/>
+        <result property="priority" column="PRIORITY"/>
+        <result property="link" column="LINK"/>
+        <result property="name" column="NAME"/>
+        <result property="originPrice" column="PRICE"/>
+        <result property="discountPrice" column="DISCOUNT_PRICE"/>
+        <result property="discountPercent" column="DISCOUNT_PERCENT"/>
+        <result property="productDetails" column="PRODUCT_DETAIL"/>
+    </resultMap>
+
+    <select id="getProductsById" resultMap="ProductDetail">
+        SELECT p.ID AS ID, p.STORE_ID AS STORE_ID, p.STATUS AS STATUS, pi.PRIORITY AS PRIORITY, pi.IMAGE AS LINK, p.NAME AS NAME, p.PRICE AS PRICE, p.DISCOUNT_PRICE AS DISCOUNT_PRICE, p.DISCOUNT_PERCENT AS DISCOUNT_PERCENT, p.PRODUCT_INFO AS PRODUCT_DETAIL
+        FROM TBL_STORE_PRODUCT p
+                 LEFT JOIN TBL_STORE_PRODUCT_IMG pi ON p.ID = pi.PRODUCT_ID
+        WHERE p.ID = #{productId}
+        AND p.STORE_ID = #{storeId}
+        ORDER BY pi.PRIORITY
+    </select>
+    
+    <select id="getOrderProductInfoByListCode" parameterType="Map" resultType="Map">
+    	SELECT
+			sp.PRODUCT_CODE,
+			pi.IMAGE,
+			sp.NAME,
+			sp.PRICE AS ORIGINAL_PRICE,
+			op.PRICE AS DISCOUNT_PRICE,
+			op.QUANTITY,
+			op.CANCELED_QUANTITY
+		FROM
+			TBL_STORE_PRODUCT sp
+			JOIN TBL_STORE_PRODUCT_IMG pi ON sp.ID = pi.PRODUCT_ID 
+				AND pi.PRIORITY = 1
+			JOIN TBL_ORDER_PRODUCTS op ON sp.PRODUCT_CODE = op.PRODUCT_ID
+				AND op.ORDER_ID = #{orderId}
+		WHERE
+			sp.PRODUCT_CODE IN
+		<foreach item="code" collection="listProductCode.productCode" separator="," open="(" close=")">
+	        #{code}
+	    </foreach>
+    </select>
+    
+    <select id="getProductCodeByID" parameterType="long" resultType="Map">
+    	SELECT
+			PRODUCT_CODE
+		FROM TBL_STORE_PRODUCT
+		WHERE ID = #{productId}
+		AND STATUS = 1
+    </select>
+    
+</mapper>

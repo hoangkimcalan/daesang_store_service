@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.epay.ewallet.store.daesang.mapperOne.IStore">
+
+
+    <resultMap id="store" type="com.epay.ewallet.store.daesang.model.Store">
+        <result property="id" column="ID"/>
+        <result property="status" column="STATUS"/>
+        <result property="name" column="NAME"/>
+    </resultMap>
+
+    <select id="getStoreById" parameterType="long" resultMap="store">
+        SELECT *
+        FROM TBL_STORE
+        WHERE ID = #{storeId}
+    </select>
+
+
+    <resultMap id="banner" type="com.epay.ewallet.store.daesang.model.Banner">
+        <result property="id" column="ID"/>
+        <result property="image" column="IMAGE"/>
+        <result property="priority" column="PRIORITY"/>
+    </resultMap>
+
+    <select id="getBannersByStoreIdSortByPriorityAsc" parameterType="long" resultMap="banner">
+        SELECT *
+        FROM TBL_STORE_BANNER
+        WHERE STORE_ID = #{storeId}
+        AND status = 1
+        ORDER BY PRIORITY ASC
+    </select>
+
+
+    <resultMap id="deliveryAddress" type="com.epay.ewallet.store.daesang.model.StoreFixedDeliveryAddress">
+        <result property="id" column="ID"/>
+        <result property="name" column="NAME"/>
+        <result property="address" column="ADDRESS"/>
+        <result property="storeId" column="STORE_ID"/>
+        <result property="status" column="STATUS"/>
+        <result property="ward" column="WARD"/>
+        <result property="district" column="DISTRICT"/>
+        <result property="city" column="CITY"/>
+        <result property="createdAt" column="CREATED_AT"/>
+        <result property="updatedAt" column="UPDATED_AT"/>
+        <result property="fixedDeliveryTime" column="FIXED_DELIVERY_TIME"/>
+    </resultMap>
+
+    <select id="getDeliveryAddressByStoreId" parameterType="long" resultMap="deliveryAddress">
+        SELECT *
+        FROM TBL_STORE_FIXED_DLV_ADDR
+        WHERE STORE_ID = #{storeId}
+        AND status = 1
+    </select>
+    
+    <select id="getDeliveryAddress" resultMap="deliveryAddress">
+    	SELECT
+			* 
+		FROM
+			TBL_STORE_FIXED_DLV_ADDR 
+		WHERE
+			ID = #{id} 
+			AND STORE_ID = #{storeId} 
+			AND STATUS = 1
+    </select>
+	
+	<select id="getStorePaymentMethod" resultType="Map">
+		SELECT PAYMENT_METHOD_ID
+		FROM TBL_MERCHANT_PAYMENT_METHODS
+		WHERE MERCHANT_GROUP = #{merchantGroupId} AND SERVICE_ID = #{serviceId} AND STATUS = '1'
+	</select>
+</mapper>

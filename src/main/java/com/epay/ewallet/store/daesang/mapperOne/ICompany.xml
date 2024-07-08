@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.epay.ewallet.store.daesang.mapperOne.ICompany">
+
+    <resultMap type="com.epay.ewallet.store.daesang.model.Company" id="Company">
+        <result property="id" column="ID"/>
+        <result property="shortName" column="SHORT_NAME"/>
+        <result property="logo" column="LOGO"/>
+        <result property="status" column="status"/>
+        <result property="logoSocial" column="LOGO_SOCIAL"/>
+        <result property="phoneNumber" column="PHONE_NUMBER"/>
+        <result property="website" column="WEBSITE"/>
+    </resultMap>
+
+    <select id="getCompanyById" parameterType="long" resultMap="Company">
+        SELECT *
+        FROM TBL_COMPANIES
+        WHERE ID = #{id}
+    </select>
+
+</mapper>

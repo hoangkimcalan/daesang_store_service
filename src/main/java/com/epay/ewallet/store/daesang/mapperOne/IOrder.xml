@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.epay.ewallet.store.daesang.mapperOne.IOrder">
+    
+    <select id="getOrders" resultType="Map">
+    	SELECT * FROM (
+			WITH order_product(TOTAL_PRODUCT, ORDERID) AS (
+				SELECT COUNT(op.PRODUCT_ID), op.ORDER_ID
+				FROM TBL_ORDER_PRODUCTS op
+				GROUP BY op.ORDER_ID
+			)
+			SELECT
+				o.ORDER_ID,
+				o.STATUS,
+				o.AMOUNT,
+				o.TOTAL_AMOUNT,
+				o.PAYMENT_AMOUNT,
+				NVL(o.REFUND_AMOUNT, 0) AS REFUND_AMOUNT,
+				o.USER_ID,
+				o.PAYMENT_METHODS_SELECTED AS PMT_METHOD,
+				order_product.TOTAL_PRODUCT,
+				temp.IMAGE,
+				temp.PRODUCT_NAME,
+				ROWNUM AS RNUM
+			FROM TBL_ORDERS o
+			INNER JOIN order_product ON o.ORDER_ID = order_product.ORDERID
+			INNER JOIN (
+				SELECT 
+					op.ORDER_ID,
+					op.PRODUCT_ID,
+					op.PRODUCT_NAME,
+					pi.IMAGE
+				FROM TBL_ORDER_PRODUCTS op
+				INNER JOIN TBL_STORE_PRODUCT_IMG pi
+					ON op.PRODUCT_ID = pi.PRODUCT_CODE
+					AND pi.PRIORITY = 1
+				WHERE pi.IMAGE IS NOT NULL
+				ORDER BY op.PRODUCT_ID ASC
+			) temp ON o.ORDER_ID = temp.ORDER_ID
+			WHERE
+				o.STORE_ID = #{storeId}
+				AND o.SERVICE_ID = #{serviceId}
+				AND o.STATUS = #{orderStatus}
+				AND o.USER_ID = #{userId}
+			ORDER BY o.CREATED_TIME DESC
+		) RESULT
+		WHERE RESULT.RNUM &gt; #{start} AND RESULT.RNUM &lt; #{end}
+    </select>
+
+	<select id="getTotalVolumeUserBoughtInThisMonth" resultType="Map">
+		SELECT
+			SUM(op.QUANTITY * sp.WEIGHT) AS ORDERED,
+			SUM(NVL(op.CANCELED_QUANTITY, 0) * sp.WEIGHT) AS CANCELED
+		FROM TBL_ORDERS o
+		INNER JOIN TBL_ORDER_PRODUCTS op
+			ON o.ORDER_ID = op.ORDER_ID
+		INNER JOIN TBL_STORE_PRODUCT sp
+			ON op.PRODUCT_ID = sp.PRODUCT_CODE
+		INNER JOIN TBL_STORE_ORDER_THRESHOLD sot
+			ON sp.ID = sot.PRODUCT_ID
+		WHERE o.USER_ID = #{userId}
+			AND o.STORE_ID = #{storeId}
+		 	AND sot.PRODUCT_CLASS IN (2, 3)
+			AND o.STATUS in ('PROCESSING', 'SHIPPING', 'RECEIVED')
+			AND o.CREATED_TIME >= TRUNC(SYSDATE, 'MM')
+			AND o.CREATED_TIME &lt; TRUNC(ADD_MONTHS(SYSDATE, 1),'MM')
+	</select>
+	
+	<select id="getDaesangOrderById" resultType="Map">
+		SELECT
+			* 
+		FROM
+			TBL_ORDERS 
+		WHERE
+			ORDER_ID = #{orderId}
+			AND STORE_ID = #{storeId}
+	</select>
+	
+	<update id="updateOrderDeliveryInfo">
+		UPDATE
+			TBL_ORDERS
+		SET
+			PHONE = #{phone},
+			RECEIVER_ADDRESS = #{deliveryAddress},
+			ETM_DELIVERY_TIME = #{etmDeliveryTime},
+			UPDATED_TIME = SYSDATE
+		WHERE
+			ORDER_ID = #{orderId}
+	</update>
+	
+</mapper>
